@@ -42,10 +42,10 @@ module.exports = defineConfig({
 	},
 	devServer: {
 		port: 8081, // 明确指定前端端口
-		// 修复代理配置，指向本地后端服务
+		// 修复代理配置，指向后端服务
 		proxy: {
 			"/api": {
-				target: "http://127.0.0.1:8000", // 指向本地后端服务
+				target: "http://8.148.228.10:8000", // 指向后端服务
 				changeOrigin: true,
 				secure: false,
 				// 可选：如果需要重写路径

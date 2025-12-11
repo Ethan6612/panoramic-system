@@ -3,7 +3,6 @@ import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 
 import { ElMessage } from "element-plus";
 
 // 使用全局 axios 实例，便于 mock 拦截统一生效
-axios.defaults.baseURL = process.env.VUE_APP_API_BASE_URL || "/";
 axios.defaults.timeout = 100000;
 const service: AxiosInstance = axios;
 
