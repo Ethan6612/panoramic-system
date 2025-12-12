@@ -385,6 +385,7 @@ const addMarkersToMap = (data: LocationData[]) => {
 		// 点击marker显示地点信息
 		marker.on("click", () => {
 			stopJumping();
+			// console.log("点击的地点",location)
 			selectedLocation.value = location;
 			contextMenuVisible.value = false;
 			startJumping(marker);

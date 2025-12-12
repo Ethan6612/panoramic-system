@@ -23,12 +23,7 @@
 				<div class="images-title">地点预览图</div>
 				<div class="images-grid">
 					<div v-for="(image, index) in previewImages" :key="index" class="image-item" @click="showImagePreview(image, index)">
-						<el-image
-							:src="loadImage(image)"
-							fit="cover"
-							lazy
-							class="location-image"
-							:preview-src-list="previewImages.map((img) => loadImage(img))" />
+						<el-image :src="loadImage(image)" fit="cover" lazy class="location-image" />
 					</div>
 				</div>
 			</div>
@@ -44,12 +39,6 @@
 				<div class="description-content">{{ location.description }}</div>
 			</div>
 
-			<!-- 地址 -->
-			<div class="address-section" v-if="location.address">
-				<el-icon><MapLocation /></el-icon>
-				<span>{{ location.address }}</span>
-			</div>
-
 			<!-- 统计信息 -->
 			<div class="stats-section" v-if="panoramaCount > 0">
 				<el-descriptions :column="1" size="small" border>
@@ -57,7 +46,7 @@
 						<el-tag type="success" size="small">{{ panoramaCount }} 个</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="创建时间">
-						{{ formatDate(location.created_at) }}
+						{{ formatDate(location?.panorama?.shoot_time) }}
 					</el-descriptions-item>
 					<el-descriptions-item label="坐标位置"> {{ location.longitude.toFixed(6) }}, {{ location.latitude.toFixed(6) }} </el-descriptions-item>
 				</el-descriptions>
@@ -77,25 +66,32 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
-import { Close, MapLocation } from "@element-plus/icons-vue";
+import { Close } from "@element-plus/icons-vue";
 import request from "@/api/request";
 
 // 定义接口
+interface Panorama {
+	id: number;
+	panorama_image: string;
+	thumbnail: string;
+	description: string;
+	shoot_time: string;
+	longitude: number;
+	latitude: number;
+	status: string;
+}
+
 interface LocationData {
 	id: number;
 	name: string;
 	longitude: number;
 	latitude: number;
-	rating?: number;
-	category?: string;
-	images?: string[]; // 图片URL列表
-	description?: string;
-	address?: string;
-	statistics?: {
-		panoramas: number;
-		created_at?: string;
-	};
-	created_at?: string;
+	rating: number;
+	category: string;
+	description: string;
+	address: string | null;
+	panorama: Panorama | null;
+	preview_images: string[];
 }
 
 interface Props {
@@ -151,40 +147,38 @@ const formatDate = (dateString?: string) => {
 
 // 加载地点的预览图片
 const loadLocationPreviewImages = async () => {
-  if (!props.location.id) return
-  
-  loading.value = true
-  try {
-    // 使用正确的接口获取地点详情（包含预览图片）
-    const response = await request.get(`/api/panorama/locations/${props.location.id}`)
-    if (response.code === "200" && response.data) {
-      const locationData = response.data
-      
-      // 从返回的数据中提取预览图片
-      if (locationData.preview_images && Array.isArray(locationData.preview_images)) {
-        previewImages.value = locationData.preview_images
-      } else if (locationData.images && Array.isArray(locationData.images)) {
-        previewImages.value = locationData.images
-      }
-      
-      // 获取全景图数量
-      panoramaCount.value = locationData.panorama ? 1 : 0
-    } else if (props.location.images && props.location.images.length > 0) {
-      // 如果后端接口不可用，使用props中的图片数据
-      previewImages.value = props.location.images
-      panoramaCount.value = props.location.statistics?.panoramas || 0
-    }
-  } catch (error) {
-    console.error('加载预览图片失败:', error)
-    // 回退到props中的图片数据
-    if (props.location.images && props.location.images.length > 0) {
-      previewImages.value = props.location.images
-    }
-    panoramaCount.value = props.location.statistics?.panoramas || 0
-  } finally {
-    loading.value = false
-  }
-}
+	if (!props.location.id) return;
+
+	loading.value = true;
+	try {
+		// 使用正确的接口获取地点详情（包含预览图片）
+		const response = await request.get(`/api/panorama/locations/${props.location.id}`);
+		if (response.code === "200" && response.data) {
+			const locationData = response.data;
+
+			// 从返回的数据中提取预览图片
+			if (locationData.preview_images && Array.isArray(locationData.preview_images)) {
+				previewImages.value = locationData.preview_images;
+			}
+
+			// 获取全景图数量
+			panoramaCount.value = locationData.panorama ? 1 : 0;
+		} else if (props.location.preview_images && props.location.preview_images.length > 0) {
+			// 如果后端接口不可用，使用props中的图片数据
+			previewImages.value = props.location.preview_images;
+			panoramaCount.value = props.location.panorama ? 1 : 0;
+		}
+	} catch (error) {
+		console.error("加载预览图片失败:", error);
+		// 回退到props中的图片数据
+		if (props.location.preview_images && props.location.preview_images.length > 0) {
+			previewImages.value = props.location.preview_images;
+		}
+		panoramaCount.value = props.location.panorama ? 1 : 0;
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 显示图片预览
 const showImagePreview = (image: string, index: number) => {
@@ -326,7 +320,10 @@ onMounted(() => {
 	font-size: 14px;
 	line-height: 1.6;
 	color: #666;
-	text-align: justify;
+	text-align: left;
+	word-wrap: break-word;
+	word-break: break-all;
+	white-space: pre-wrap;
 }
 
 .address-section {
