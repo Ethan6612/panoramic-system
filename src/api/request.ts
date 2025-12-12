@@ -4,6 +4,11 @@ import { ElMessage } from "element-plus";
 
 // 使用全局 axios 实例，便于 mock 拦截统一生效
 axios.defaults.timeout = 100000;
+
+// 配置 baseURL：开发环境使用代理（相对路径），生产环境使用完整URL
+axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
+  ? process.env.VUE_APP_API_BASE_URL || 'http://8.148.228.10:8000'
+  : '';
 const service: AxiosInstance = axios;
 
 // 请求拦截器：自动添加 token

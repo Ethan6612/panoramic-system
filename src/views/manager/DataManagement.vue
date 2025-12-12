@@ -1141,18 +1141,8 @@ import {
 	Close
 } from "@element-plus/icons-vue";
 import request from "@/api/request";
+import { loadImage } from "@/utils/imageUrl";
 // import { onUnmounted } from "vue";
-
-// 图片加载函数
-const loadImage = (path: string | number) => {
-  if (typeof path === 'number' || (typeof path === 'string' && /^\d+$/.test(path))) {
-    return `/api/images/${path}`;
-  }
-  if (typeof path === 'string' && (path.startsWith('http') || path.startsWith('/api/images/'))) {
-    return path;
-  }
-  return 'https://placeholder.im/1600x800/connecting/3f51b5/ffffff';
-};
 
 // 格式化文件大小
 const formatFileSize = (bytes: number) => {

@@ -69,8 +69,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { Close } from "@element-plus/icons-vue";
 import request from "@/api/request";
 import { LocationData } from "@/types/panorama";
-
-
+import { loadImage } from "@/utils/imageUrl";
 
 interface Props {
 	location: LocationData;
@@ -92,26 +91,6 @@ const panoramaCount = ref(0);
 const imagePreviewVisible = ref(false);
 const previewIndex = ref(0);
 
-// 图片加载函数
-const loadImage = (path: string | number) => {
-	if (typeof path === "number" || (typeof path === "string" && /^\d+$/.test(path))) {
-		// 如果是数字或纯数字字符串，认为是图片ID
-		return `/api/images/${path}`;
-	}
-	if (typeof path === "string") {
-		// 如果是完整URL
-		if (path.startsWith("http") || path.startsWith("/api/images/")) {
-			return path;
-		}
-		// 如果是相对路径
-		if (path.startsWith("/")) {
-			return path;
-		}
-	}
-	// 默认占位图
-	return "https://placeholder.im/400x300/connecting/3f51b5/ffffff";
-};
-
 // 格式化日期
 const formatDate = (dateString?: string) => {
 	if (!dateString) return "未知";
@@ -130,7 +109,7 @@ const loadLocationPreviewImages = async () => {
 	loading.value = true;
 	try {
 		// 使用正确的接口获取地点详情（包含预览图片）
-		const response = await request.get(`/api/panorama/locations/${props.location.id}`);
+		const response = (await request.get(`/api/panorama/locations/${props.location.id}`)) as any;
 		if (response.code === "200" && response.data) {
 			const locationData = response.data;
 

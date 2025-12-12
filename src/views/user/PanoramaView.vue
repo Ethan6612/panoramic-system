@@ -132,6 +132,7 @@ import { ElMessage, ElLoading } from "element-plus";
 import { Viewer } from "photo-sphere-viewer";
 import "photo-sphere-viewer/dist/photo-sphere-viewer.css";
 import request from "@/api/request";
+import { buildImageUrl } from "@/utils/imageUrl";
 
 const route = useRoute();
 const router = useRouter();
@@ -243,34 +244,7 @@ const generateTimeLabel = (timestamp) => {
 	}
 };
 
-// 构建图片URL - 优先使用本地图片
-const buildImageUrl = (imagePath) => {
-	if (!imagePath) return null;
-
-	// 如果已经是完整URL，检查是否为外部URL
-	if (imagePath.startsWith("http")) {
-		// 如果是外部URL且有CORS问题，返回null
-		if (imagePath.includes("placeholder.im") || imagePath.includes("via.placeholder.com")) {
-			console.warn("检测到可能被CORS阻止的外部图片URL:", imagePath);
-			return null;
-		}
-		return imagePath;
-	}
-
-	// 如果是相对路径（以/api/开头），直接返回（代理会处理）
-	if (imagePath.startsWith("/api/")) {
-		return imagePath;
-	}
-
-	// 如果是图片ID，构建相对路径
-	if (/^\d+$/.test(imagePath)) {
-		const url = `/api/images/${imagePath}`;
-		return url;
-	}
-
-	console.warn("无法识别的图片路径格式:", imagePath);
-	return null;
-};
+// 使用统一的图片URL构建函数（已从 @/utils/imageUrl 导入）
 
 // 获取有效的图片URL
 const getValidImageUrl = async (imageUrl) => {
@@ -976,11 +950,9 @@ const onTimePeriodChange = async (periodId) => {
 
 		// 如果这个时间段没有预览图片，尝试获取
 		if ((!period.images || period.images.length === 0) && period.panoramaId) {
-
 			const previews = await getPanoramaPreviews(period.panoramaId);
 			if (previews.length > 0) {
 				period.images = previews.map((img) => buildImageUrl(img)).filter((img) => img !== null);
-
 			}
 		}
 
