@@ -226,7 +226,7 @@
 					<el-descriptions-item label="执行人">
 						{{ currentTask.assigned_to?.name || "未指派" }}
 					</el-descriptions-item>
-					<el-descriptions-item label="创建人">{{ currentTask.created_by?.name }}</el-descriptions-item>
+					<el-descriptions-item label="创建人">{{ currentTask.created_by?.username }}</el-descriptions-item>
 					<el-descriptions-item label="创建时间">{{ currentTask.created_at }}</el-descriptions-item>
 					<el-descriptions-item label="截止时间">{{ currentTask.deadline }}</el-descriptions-item>
 					<el-descriptions-item label="完成时间" :span="2">{{ currentTask.completion_time || "未完成" }}</el-descriptions-item>
@@ -258,38 +258,6 @@
 							{{ history.performed_by }}：{{ history.description }}
 						</el-timeline-item>
 					</el-timeline>
-				</div>
-
-				<!-- 评论 -->
-				<div class="task-comments">
-					<h4>评论与进展</h4>
-					<div class="comment-list">
-						<div v-for="comment in currentTask.comments" :key="comment.id" class="comment-item">
-							<div class="comment-header">
-								<span class="comment-author">{{ comment.created_by }}</span>
-								<span class="comment-time">{{ comment.created_at }}</span>
-								<el-tag size="small" :type="comment.comment_type === 'progress' ? 'success' : 'info'">
-									{{ comment.comment_type === "progress" ? "进展" : "备注" }}
-								</el-tag>
-							</div>
-							<div class="comment-content">{{ comment.content }}</div>
-							<div v-if="comment.attachments && comment.attachments.length > 0" class="comment-attachments">
-								<div v-for="(url, index) in comment.attachments" :key="index" class="comment-attachment">
-									<img :src="url" alt="评论附件" @click="previewImage(url)" />
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="comment-form">
-						<el-input v-model="newComment" type="textarea" :rows="2" placeholder="添加评论或进展..." />
-						<div class="comment-actions">
-							<el-radio-group v-model="commentType">
-								<el-radio label="remark">备注</el-radio>
-								<el-radio label="progress">进展</el-radio>
-							</el-radio-group>
-							<el-button type="primary" size="small" @click="addComment" :disabled="!newComment.trim()"> 提交 </el-button>
-						</div>
-					</div>
 				</div>
 			</div>
 		</el-dialog>
@@ -489,9 +457,7 @@ const uploadHeaders = computed(() => ({
 	token: localStorage.getItem("token") || "",
 }));
 
-// 评论相关
-const newComment = ref("");
-const commentType = ref("remark");
+
 
 // 统计图表
 const typeChart = ref<HTMLElement | null>(null);
@@ -966,38 +932,6 @@ const handleShowOnMap = (row: any) => {
 	nextTick(() => {
 		initMapViewer(row);
 	});
-};
-
-// 添加评论
-const addComment = async () => {
-	if (!newComment.value.trim()) return;
-
-	try {
-		const payload = {
-			content: newComment.value,
-			comment_type: commentType.value,
-			attachments: [],
-		};
-
-		const response = await request.post(`/api/government/tasks/${currentTask.value.id}/comments`, payload, {
-			headers: {
-				token: localStorage.getItem("token") || "",
-			},
-		});
-
-		const responseData = response as any;
-		if (responseData && responseData.code === "200") {
-			ElMessage.success("评论添加成功");
-			newComment.value = "";
-			// 重新加载任务详情
-			await handleViewDetail(currentTask.value);
-		} else {
-			ElMessage.error(responseData?.msg || "添加评论失败");
-		}
-	} catch (error: any) {
-		console.error("添加评论失败:", error);
-		ElMessage.error(error.response?.data?.detail || "添加评论失败");
-	}
 };
 
 // 图片预览
