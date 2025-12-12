@@ -144,19 +144,19 @@ const isAdvancedUser = computed(() => {
 const mapContainer = ref<HTMLElement | null>(null);
 let map: any = null;
 let markersMap = new Map<number, any>();
-// let shopMarkers: any[] = [];
-// const shopCoords: Record<string, [number, number]> = {
-//   "星光餐馆": [113.3915, 22.5308],
-//   "乐家超市": [113.3821, 22.5263],
-//   "海湾酒店": [113.4042, 22.5319],
-//   "老街小吃": [113.3738, 22.5201],
-//   "新光商场": [113.4186, 22.5473],
-//   "幸福饭店": [113.389, 22.532],
-//   "便利超市": [113.381, 22.524],
-//   "假日酒店": [113.405, 22.533],
-//   "风味小吃": [113.372, 22.519],
-//   "阳光商超": [113.420, 22.546],
-// };
+let shopMarkers: any[] = [];
+const shopCoords: Record<string, [number, number]> = {
+  "星光餐馆": [113.3915, 22.5308],
+  "乐家超市": [113.3821, 22.5263],
+  "海湾酒店": [113.4042, 22.5319],
+  "老街小吃": [113.3738, 22.5201],
+  "新光商场": [113.4186, 22.5473],
+  "幸福饭店": [113.389, 22.532],
+  "便利超市": [113.381, 22.524],
+  "假日酒店": [113.405, 22.533],
+  "风味小吃": [113.372, 22.519],
+  "阳光商超": [113.420, 22.546],
+};
 
 // 搜索
 const searchKeyword = ref("");
@@ -320,7 +320,7 @@ const initMap = async () => {
 
 		// 加载地点数据
 		await loadLocations();
-		// await loadApprovedShops();
+		await loadApprovedShops();
 
 		// 加载完成后，将地图中心设置为第一个marker的坐标
 		if (locations.value.length > 0) {
@@ -409,42 +409,42 @@ const addMarkersToMap = (data: LocationData[]) => {
 	});
 };
 
-// const loadApprovedShops = async () => {
-//   try {
-//     const response = await request.get("/api/shop/list", { params: { page: 1, pageSize: 1000 } });
-//     const res: any = response;
-//     if (res && res.data && Array.isArray(res.data.list)) {
-//       const list = res.data.list;
-//       const approved = list.filter((x: any) => (x.auditStatus === "approved") || (x.audit_status === "approved"));
-//       addShopMarkers(approved);
-//     }
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+const loadApprovedShops = async () => {
+  try {
+    const response = await request.get("/api/shop/list", { params: { page: 1, pageSize: 1000 } });
+    const res: any = response;
+    if (res && res.data && Array.isArray(res.data.list)) {
+      const list = res.data.list;
+      const approved = list.filter((x: any) => (x.auditStatus === "approved") || (x.audit_status === "approved"));
+      addShopMarkers(approved);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// const addShopMarkers = (shops: any[]) => {
-//   if (!map) return;
-//   const AMap = (window as any).AMap;
-//   if (!AMap) return;
-//   shops.forEach((shop: any) => {
-//     const coord = shopCoords[shop.username];
-//     if (!coord) return;
-//     const marker = new AMap.Marker({
-//       position: coord,
-//       map: map,
-//       title: shop.username,
-//     });
-//     const infoWindow = new (AMap as any).InfoWindow({
-//       content: `<div style="padding:8px;"><strong>${shop.username}</strong><br/>${shop.email}</div>`,
-//       offset: new (AMap as any).Pixel(0, -30),
-//     });
-//     marker.on("click", () => {
-//       infoWindow.open(map, marker.getPosition());
-//     });
-//     shopMarkers.push(marker);
-//   });
-// };
+const addShopMarkers = (shops: any[]) => {
+  if (!map) return;
+  const AMap = (window as any).AMap;
+  if (!AMap) return;
+  shops.forEach((shop: any) => {
+    const coord = shopCoords[shop.username];
+    if (!coord) return;
+    const marker = new AMap.Marker({
+      position: coord,
+      map: map,
+      title: shop.username,
+    });
+    const infoWindow = new (AMap as any).InfoWindow({
+      content: `<div style="padding:8px;"><strong>${shop.username}</strong><br/>${shop.email}</div>`,
+      offset: new (AMap as any).Pixel(0, -30),
+    });
+    marker.on("click", () => {
+      infoWindow.open(map, marker.getPosition());
+    });
+    shopMarkers.push(marker);
+  });
+};
 
 // 开始跳动动画
 const startJumping = (marker: any) => {
