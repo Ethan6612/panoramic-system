@@ -68,31 +68,9 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { Close } from "@element-plus/icons-vue";
 import request from "@/api/request";
+import { LocationData } from "@/types/panorama";
 
-// 定义接口
-interface Panorama {
-	id: number;
-	panorama_image: string;
-	thumbnail: string;
-	description: string;
-	shoot_time: string;
-	longitude: number;
-	latitude: number;
-	status: string;
-}
 
-interface LocationData {
-	id: number;
-	name: string;
-	longitude: number;
-	latitude: number;
-	rating: number;
-	category: string;
-	description: string;
-	address: string | null;
-	panorama: Panorama | null;
-	preview_images: string[];
-}
 
 interface Props {
 	location: LocationData;

@@ -1,4 +1,15 @@
 // 地点数据类型（基础信息，不包含timePeriods）
+interface Panorama {
+	id: number;
+	panorama_image: string;
+	thumbnail: string;
+	description: string;
+	shoot_time: string;
+	longitude: number;
+	latitude: number;
+	status: string;
+}
+
 export interface LocationData {
 	id: number;
 	name: string;
@@ -6,9 +17,10 @@ export interface LocationData {
 	latitude: number;
 	rating: number;
 	category: string;
-	description?: string;
-	address?: string;
-	timePeriods?: TimePeriodData[];
+	description: string;
+	address: string | null;
+	panorama: Panorama | null;
+	preview_images: string[];
 }
 
 // 时间段数据
