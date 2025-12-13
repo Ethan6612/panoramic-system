@@ -7,7 +7,7 @@
 		</div>
 
 		<!-- 全景图容器 -->
-		<div ref="panoRef" class="panorama-container" @click="togglePreviewPanel"></div>
+		<div ref="panoRef" class="panorama-container" @dblclick="togglePreviewPanel"></div>
 
 		<!-- 半透明预览区域 -->
 		<div v-show="showPreviewPanel" class="preview-panel" @click.stop>
@@ -1037,8 +1037,19 @@ const downloadImage = () => {
 };
 
 // 切换预览面板显示/隐藏
+const togglePanelCount = ref(0);
+
 const togglePreviewPanel = () => {
-	showPreviewPanel.value = !showPreviewPanel.value;
+  showPreviewPanel.value = !showPreviewPanel.value;
+
+  // 首次切换时显示提示
+  if (togglePanelCount.value === 0) {
+    ElMessage.info({
+      message: '提示：双击全景图区域可切换预览面板',
+      duration: 3000,
+    });
+    togglePanelCount.value++;
+  }
 };
 
 // 返回上一页
