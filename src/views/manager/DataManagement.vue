@@ -58,10 +58,7 @@
 					<el-table-column label="数据ID" prop="id" />
 					<el-table-column label="缩略图" min-width="120">
 						<template #default="{ row }">
-							<el-image
-								:src="loadImage(row.thumbnail)"
-								style="width: 80px; height: 60px"
-								fit="cover"/>
+							<el-image :src="loadImage(row.thumbnail)" style="width: 80px; height: 60px" fit="cover" />
 						</template>
 					</el-table-column>
 					<el-table-column prop="name" label="数据名称" min-width="150" />
@@ -723,38 +720,45 @@
 		<!-- 图片画廊对话框 -->
 		<el-dialog v-model="galleryDialogVisible" title="预览图画廊" width="90%" fullscreen>
 			<div v-if="currentGalleryData" class="gallery-container">
+				<!-- 主图区域 -->
 				<div class="gallery-main">
-					<el-image :src="loadImage(currentGalleryData.currentImage)" style="width: 100%" fit="contain" />
-				</div>
-				<div class="gallery-controls">
-					<div class="gallery-info">
-						<h3>{{ currentGalleryData.panorama.description || "全景图预览" }}</h3>
-						<p>图片 {{ currentGalleryData.currentIndex + 1 }} / {{ currentGalleryData.images.length }}</p>
+					<el-button class="nav-btn nav-prev" :disabled="currentGalleryData.currentIndex === 0" @click="prevGalleryImage" circle>
+						<el-icon><ArrowLeft /></el-icon>
+					</el-button>
+
+					<div class="gallery-image-wrapper">
+						<img :src="loadImage(currentGalleryData.currentImage)" class="gallery-main-image" />
 					</div>
-					<div class="gallery-nav">
-						<el-button :disabled="currentGalleryData.currentIndex === 0" @click="prevGalleryImage">
-							<el-icon><ArrowLeft /></el-icon>
-							上一张
-						</el-button>
-						<el-button :disabled="currentGalleryData.currentIndex === currentGalleryData.images.length - 1" @click="nextGalleryImage">
-							下一张
-							<el-icon><ArrowRight /></el-icon>
-						</el-button>
-					</div>
+
+					<el-button
+						class="nav-btn nav-next"
+						:disabled="currentGalleryData.currentIndex === currentGalleryData.images.length - 1"
+						@click="nextGalleryImage"
+						circle>
+						<el-icon><ArrowRight /></el-icon>
+					</el-button>
 				</div>
-				<div class="gallery-thumbnails">
-					<div
-						v-for="(img, index) in currentGalleryData.images"
-						:key="index"
-						:class="['thumbnail-item', { active: index === currentGalleryData.currentIndex }]"
-						@click="selectGalleryImage(index)">
-						<el-image :src="loadImage(img)" style="width: 120px; height: 90px" fit="cover" />
-						<div class="thumbnail-index">{{ index + 1 }}</div>
+
+				<!-- 底部缩略图栏 -->
+				<div class="gallery-thumbnails-wrapper">
+					<div class="gallery-thumbnails">
+						<div
+							v-for="(img, index) in currentGalleryData.images"
+							:key="index"
+							:class="['gallery-thumb-item', { active: index === currentGalleryData.currentIndex }]"
+							@click="selectGalleryImage(index)">
+							<el-image :src="loadImage(img)" fit="cover" />
+							<div class="thumb-index">{{ index + 1 }}</div>
+							<!-- 删除按钮 -->
+							<div class="thumb-delete" @click.stop="handleRemoveGalleryImage(index)">
+								<el-icon><Close /></el-icon>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 			<template #footer>
-				<el-button type="primary" @click="galleryDialogVisible = false">关闭</el-button>
+				<el-button @click="galleryDialogVisible = false">关闭</el-button>
 			</template>
 		</el-dialog>
 
@@ -1131,6 +1135,65 @@ const selectGalleryImage = (index: number) => {
 	if (currentGalleryData.value && index >= 0 && index < currentGalleryData.value.images.length) {
 		currentGalleryData.value.currentIndex = index;
 		currentGalleryData.value.currentImage = currentGalleryData.value.images[index];
+	}
+};
+
+// 从画廊中删除图片
+const handleRemoveGalleryImage = async (index: number) => {
+	if (!currentGalleryData.value) return;
+
+	const imageUrl = currentGalleryData.value.images[index];
+	const panorama = currentGalleryData.value.panorama;
+
+	try {
+		await ElMessageBox.confirm("确定要删除这张预览图吗？", "删除预览图", {
+			confirmButtonText: "确定删除",
+			cancelButtonText: "取消",
+			type: "warning",
+		});
+
+		// 从URL中提取图片ID
+		const imageId = imageUrl.split("/").pop();
+		if (!imageId) {
+			ElMessage.error("无法获取图片ID");
+			return;
+		}
+
+		// 直接发送数组，与添加预览图的格式保持一致
+		const response = await request.delete(`/api/panorama/${panorama.id}/remove-preview`, {
+			data: [parseInt(imageId)],
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (response.code === "200") {
+			ElMessage.success("预览图已删除");
+
+			// 更新画廊数据
+			currentGalleryData.value.images.splice(index, 1);
+
+			// 如果删除后没有图片了，关闭画廊
+			if (currentGalleryData.value.images.length === 0) {
+				galleryDialogVisible.value = false;
+				ElMessage.info("所有预览图已删除");
+			} else {
+				// 调整当前索引
+				if (currentGalleryData.value.currentIndex >= currentGalleryData.value.images.length) {
+					currentGalleryData.value.currentIndex = currentGalleryData.value.images.length - 1;
+				}
+				currentGalleryData.value.currentImage = currentGalleryData.value.images[currentGalleryData.value.currentIndex];
+			}
+
+			// 刷新列表数据
+			loadData();
+			loadPanoramaPreviews();
+		}
+	} catch (error: any) {
+		if (error !== "cancel") {
+			console.error("删除失败:", error);
+			ElMessage.error("删除预览图失败");
+		}
 	}
 };
 
@@ -1599,6 +1662,7 @@ const handleConfirmAddPreview = async () => {
 };
 
 // 移除预览图
+// 移除预览图
 const handleRemovePreview = async (item: any, imageUrl: string) => {
 	try {
 		// 从URL中提取图片ID
@@ -1614,9 +1678,11 @@ const handleRemovePreview = async (item: any, imageUrl: string) => {
 			type: "warning",
 		});
 
+		// 直接发送数组，而不是对象
 		const response = await request.delete(`/api/panorama/${item.id}/remove-preview`, {
-			data: {
-				preview_image_ids: [parseInt(imageId)],
+			data: [parseInt(imageId)],
+			headers: {
+				"Content-Type": "application/json",
 			},
 		});
 
@@ -2299,77 +2365,165 @@ onMounted(() => {
 	margin-right: 10px;
 }
 
-/* 画廊样式 */
+/* ========== 画廊样式 ========== */
 .gallery-container {
 	display: flex;
 	flex-direction: column;
-	height: 80vh;
+	height: calc(100vh - 160px);
 }
 
+/* 主图区域 */
 .gallery-main {
-	flex: 1;
+	flex: 1 1 0;
+	min-height: 0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: #f5f5f5;
-	border-radius: 4px;
-	margin-bottom: 20px;
-	overflow: hidden;
+	background: #1e1e2f;
+	border-radius: 8px;
+	position: relative;
+	margin-bottom: 15px;
+	padding: 15px 60px;
+	box-sizing: border-box;
 }
 
-.gallery-controls {
+.gallery-image-wrapper {
+	width: 100%;
+	height: 100%;
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 20px;
-	padding: 15px;
-	background: #f9f9f9;
+	justify-content: center;
+}
+
+.gallery-main-image {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
 	border-radius: 4px;
 }
 
-.gallery-info h3 {
-	margin: 0 0 5px 0;
-	color: #333;
+/* 导航按钮 */
+.nav-btn {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 10;
+	background: rgba(255, 255, 255, 0.85) !important;
+	border: none !important;
 }
 
-.gallery-info p {
-	margin: 0;
-	color: #666;
-	font-size: 14px;
+.nav-btn:hover:not(:disabled) {
+	background: #fff !important;
 }
 
-.gallery-nav {
-	display: flex;
-	gap: 10px;
+.nav-btn:disabled {
+	background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-prev {
+	left: 10px;
+}
+.nav-next {
+	right: 10px;
+}
+
+/* 底部缩略图 */
+.gallery-thumbnails-wrapper {
+	flex-shrink: 0;
+	height: 100px;
+	background: #f5f5f5;
+	border-radius: 8px;
+	padding: 10px;
+	box-sizing: border-box;
 }
 
 .gallery-thumbnails {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	display: flex;
 	gap: 10px;
-	padding: 15px;
-	background: #f9f9f9;
-	border-radius: 4px;
-	max-height: 200px;
-	overflow-y: auto;
+	height: 100%;
+	overflow-x: auto;
+	align-items: center;
 }
 
-.gallery-thumbnails .thumbnail-item {
+.gallery-thumbnails::-webkit-scrollbar {
+	height: 4px;
+}
+
+.gallery-thumbnails::-webkit-scrollbar-thumb {
+	background: #ccc;
+	border-radius: 2px;
+}
+
+/* 缩略图项 */
+.gallery-thumb-item {
 	position: relative;
-	cursor: pointer;
-	border: 2px solid transparent;
+	flex-shrink: 0;
+	width: 90px;
+	height: 60px;
 	border-radius: 4px;
 	overflow: hidden;
+	cursor: pointer;
+	border: 2px solid transparent;
+	transition: all 0.2s;
 }
 
-.gallery-thumbnails .thumbnail-item.active {
+.gallery-thumb-item .el-image {
+	width: 100%;
+	height: 100%;
+}
+
+.gallery-thumb-item:hover {
+	transform: translateY(-2px);
+}
+
+.gallery-thumb-item.active {
 	border-color: #409eff;
 }
 
-.gallery-thumbnails .thumbnail-item:hover {
-	transform: scale(1.05);
+.thumb-index {
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	font-size: 10px;
+	padding: 1px 4px;
+	border-radius: 2px;
 }
 
+/* 删除按钮 */
+.thumb-delete {
+	position: absolute;
+	top: 1px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	background: #f56c6c;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	opacity: 0;
+	transform: scale(0.5);
+	transition: all 0.2s;
+	cursor: pointer;
+	z-index: 5;
+}
+
+.gallery-thumb-item:hover .thumb-delete {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.thumb-delete:hover {
+	background: #e03030;
+	transform: scale(1.1);
+}
+
+.thumb-delete .el-icon {
+	font-size: 10px;
+}
 /* 空状态和加载状态 */
 .preview-empty {
 	padding: 60px 0;
@@ -2499,15 +2653,15 @@ onMounted(() => {
 }
 
 .loading-spinner {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #409eff;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	color: #409eff;
 }
 
 .loading-spinner .el-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
+	font-size: 36px;
+	margin-bottom: 10px;
 }
 </style>
