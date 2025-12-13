@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { ElMessage } from "element-plus";
 import PanoramaHome from "@/views/user/PanoramaHome.vue";
 import PanoramaView from "@/views/user/PanoramaView.vue";
@@ -133,7 +133,7 @@ const routes = [
 ];
 
 const router = createRouter({
-	history: createWebHistory(),
+	history: createWebHashHistory(),
 	routes,
 });
 
