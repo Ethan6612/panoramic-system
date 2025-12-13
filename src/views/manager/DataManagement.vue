@@ -101,7 +101,6 @@
 							<el-button v-if="!row.is_used && row.status === 'published'" link type="success" size="small" @click="showAssignDialog(row)">
 								关联地点
 							</el-button>
-							<el-button v-if="row.is_used" link type="warning" size="small" @click="showDetachDialog(row)"> 解除关联 </el-button>
 							<el-button link type="primary" size="small" @click="handleEdit(row)"> 编辑 </el-button>
 							<el-button link type="primary" size="small" @click="handleViewDetail(row)"> 详情 </el-button>
 							<el-button link type="danger" size="small" @click="handleDelete(row)"> 删除 </el-button>
@@ -329,7 +328,6 @@
 									<el-button v-if="!item.is_used && item.status === 'published'" type="success" size="small" @click="showAssignDialog(item)">
 										关联地点
 									</el-button>
-									<el-button v-if="item.is_used" type="warning" size="small" @click="showDetachDialog(item)"> 解除关联 </el-button>
 									<el-button type="info" size="small" @click="handleViewPanoramaDetail(item)"> 详情 </el-button>
 									<el-button type="primary" size="small" @click="handleAddPreviewForPanorama(item)" plain> 添加预览图 </el-button>
 								</div>
@@ -448,7 +446,7 @@
 			</template>
 		</el-dialog>
 
-		<!-- 编辑对话框 -->
+		<!-- 编辑对话框 - 修改保存按钮 -->
 		<el-dialog v-model="editDialogVisible" title="编辑数据" width="600px">
 			<div v-if="editData" class="edit-content">
 				<el-form :model="editForm" label-width="100px" :rules="editRules" ref="editFormRef">
@@ -479,7 +477,7 @@
 			</div>
 			<template #footer>
 				<el-button @click="editDialogVisible = false">取消</el-button>
-				<el-button type="primary" @click="handleConfirmEdit">保存</el-button>
+				<el-button type="primary" @click="handleConfirmEdit" :loading="editLoading">保存</el-button>
 			</template>
 		</el-dialog>
 
@@ -498,7 +496,7 @@
 						<el-icon class="el-icon--upload"><UploadFilled /></el-icon>
 						<div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 						<template #tip>
-							<div class="el-upload__tip">支持jpg/png格式文件，且不超过10MB</div>
+							<div class="el-upload__tip">支持jpg/png格式文件，且<strong>不超过10MB</strong></div>
 						</template>
 					</el-upload>
 				</el-form-item>
@@ -690,7 +688,7 @@
 						<el-icon class="el-icon--upload"><UploadFilled /></el-icon>
 						<div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 						<template #tip>
-							<div class="el-upload__tip">支持jpg/png格式文件，且不超过10MB，最多可上传10张图片</div>
+							<div class="el-upload__tip">支持jpg/png格式文件，且<strong>不超过10MB</strong>，最多可上传10张图片</div>
 						</template>
 					</el-upload>
 
@@ -850,7 +848,9 @@ const reviewComment = ref("");
 const detailDialogVisible = ref(false);
 const detailData = ref<any>(null);
 
+// 修改：添加编辑加载状态
 const editDialogVisible = ref(false);
+const editLoading = ref(false); // 新增：编辑保存加载状态
 const editData = ref<any>(null);
 const editFormRef = ref<FormInstance>();
 const editForm = reactive({
@@ -1543,33 +1543,7 @@ const showAssignDialog = async (row: any) => {
 	}
 };
 
-// 为全景图显示解除关联对话框
-const showDetachDialog = (row: any) => {
-	if (!row.location_id) {
-		ElMessage.warning("该全景图未关联地点");
-		return;
-	}
-
-	ElMessageBox.confirm(`确定要解除全景图与地点的关联吗？`, "解除关联", {
-		confirmButtonText: "确定",
-		cancelButtonText: "取消",
-		type: "warning",
-	})
-		.then(async () => {
-			try {
-				const response = await request.post(`/api/panorama/locations/${row.location_id}/detach-panorama`);
-				if (response.code === "200") {
-					ElMessage.success("已解除关联");
-					loadData();
-					loadLocations();
-					loadPanoramaPreviews();
-				}
-			} catch (error) {
-				ElMessage.error("解除关联失败");
-			}
-		})
-		.catch(() => {});
-};
+// 修改：移除 showDetachDialog 函数和相关调用
 
 // 查看全景图详情
 const handleViewPanoramaDetail = (row: any) => {
@@ -1579,6 +1553,12 @@ const handleViewPanoramaDetail = (row: any) => {
 
 // 添加预览图文件处理
 const handleAddPreviewFileChange = (file: any) => {
+	// 验证文件大小
+	if (file.raw && file.raw.size > 10 * 1024 * 1024) {
+		ElMessage.error("图片大小不能超过10MB");
+		// 不清空文件列表，让用户可以选择其他文件
+		return;
+	}
 	addPreviewFiles.value.push(file);
 };
 
@@ -1604,6 +1584,14 @@ const handleAddPreviewForPanorama = (item: any) => {
 // 确认添加预览图
 const handleConfirmAddPreview = async () => {
 	if (!currentPanorama.value || addPreviewFiles.value.length === 0) return;
+
+	// 验证所有文件大小
+	for (const file of addPreviewFiles.value) {
+		if (file.raw && file.raw.size > 10 * 1024 * 1024) {
+			ElMessage.error(`文件 ${file.name} 大小超过10MB`);
+			return;
+		}
+	}
 
 	addPreviewLoading.value = true;
 
@@ -1639,7 +1627,7 @@ const handleConfirmAddPreview = async () => {
 		// 将图片关联到全景图 - 直接发送数组
 		const response = await request.post(`/api/panorama/${currentPanorama.value.id}/add-preview`, uploadedImageIds, {
 			headers: {
-				"Content-Type": "application/json",
+					"Content-Type": "application/json",
 			},
 		});
 
@@ -1661,7 +1649,6 @@ const handleConfirmAddPreview = async () => {
 	}
 };
 
-// 移除预览图
 // 移除预览图
 const handleRemovePreview = async (item: any, imageUrl: string) => {
 	try {
@@ -1797,13 +1784,20 @@ const validateMetadata = () => {
 	return true;
 };
 
+// 修改：编辑保存函数，添加加载状态
 const handleConfirmEdit = async () => {
 	if (!editFormRef.value) return;
+
+	// 如果正在保存，直接返回
+	if (editLoading.value) return;
+
+	editLoading.value = true;
 
 	try {
 		await editFormRef.value.validate();
 
 		if (!validateMetadata()) {
+			editLoading.value = false;
 			return;
 		}
 
@@ -1824,6 +1818,8 @@ const handleConfirmEdit = async () => {
 			editDialogVisible.value = false;
 			loadData();
 			loadPanoramaPreviews();
+		} else {
+			ElMessage.error(response.msg || "更新失败");
 		}
 	} catch (error: any) {
 		if (error.errors) {
@@ -1831,6 +1827,8 @@ const handleConfirmEdit = async () => {
 		} else {
 			ElMessage.error("更新失败");
 		}
+	} finally {
+		editLoading.value = false;
 	}
 };
 
@@ -1844,10 +1842,22 @@ const beforeUpload = (file: File) => {
 		return false;
 	}
 	if (!isLt10M) {
-		ElMessage.error("图片大小不能超过 10MB!");
+		ElMessage.error("图片大小不能超过10MB!");
 		return false;
 	}
 	return true;
+};
+
+// 修改：在 handleFileChange 中添加文件大小验证
+const handleFileChange = (file: any) => {
+	// 验证文件大小
+	if (file.raw && file.raw.size > 10 * 1024 * 1024) {
+		ElMessage.error("图片大小不能超过10MB");
+		// 清空文件列表
+		uploadFiles.value = [];
+		return;
+	}
+	uploadFiles.value = [file];
 };
 
 const handleBatchAction = async (command: string) => {
@@ -1970,10 +1980,7 @@ const handleUpload = async () => {
 	});
 };
 
-const handleFileChange = (file: any) => {
-	uploadFiles.value = [file];
-};
-
+// 修改：在 handleConfirmUpload 中添加文件大小验证
 const handleConfirmUpload = async () => {
 	if (!uploadFormRef.value) return;
 
@@ -1982,6 +1989,13 @@ const handleConfirmUpload = async () => {
 
 		if (uploadFiles.value.length === 0) {
 			ElMessage.warning("请选择要上传的文件");
+			return;
+		}
+
+		// 再次验证文件大小（额外的保护）
+		const file = uploadFiles.value[0];
+		if (file && file.raw && file.raw.size > 10 * 1024 * 1024) {
+			ElMessage.error("文件大小不能超过10MB");
 			return;
 		}
 
