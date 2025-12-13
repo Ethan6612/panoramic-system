@@ -237,15 +237,19 @@ const clearAllRememberedCredentials = () => {
 // 处理记住我复选框变化
 const handleRememberChange = (value: boolean) => {
 	if (!value) {
-		// 如果取消记住我，清除保存的凭据
-		clearAllRememberedCredentials();
-	}
-};
+		// 如果取消记住我，仅清除当前表单的记住状态
+		// 不立即清除本地存储的凭据
+		loginForm.value.rememberMe = false;
 
-// 密码输入框获取焦点时
-const handlePasswordFocus = () => {
-	if (rememberedPassword.value) {
-		showPasswordHint.value = true;
+		// 如果当前显示的是记住的密码，清除密码字段
+		if (rememberedPassword.value) {
+			loginForm.value.password = "";
+			showPasswordHint.value = false;
+			rememberedPassword.value = null;
+		}
+	} else {
+		// 如果勾选记住我，更新状态即可
+		loginForm.value.rememberMe = true;
 	}
 };
 
