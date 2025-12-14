@@ -32,8 +32,7 @@
 						placeholder="请输入您的密码"
 						size="large"
 						class="form-input"
-						@keyup.enter="handleLogin"
-						@focus="handlePasswordFocus">
+						@keyup.enter="handleLogin">
 						<template #suffix>
 							<el-icon 
 								class="password-toggle"
