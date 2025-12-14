@@ -234,6 +234,39 @@ const clearAllRememberedCredentials = () => {
 	.catch(() => {});
 };
 
+// 登录失败时显示清除密码弹窗
+const showClearPasswordDialog = async (errorMsg: string) => {
+	try {
+		await ElMessageBox.confirm(
+			`登录失败：${errorMsg}\n\n检测到您使用了记住的密码，可能是密码已更改或输入错误。是否清除保存的密码？`,
+			"登录失败",
+			{
+				confirmButtonText: "清除密码",
+				cancelButtonText: "保留密码",
+				type: "warning",
+				center: true,
+				distinguishCancelAndClose: true,
+			}
+		);
+		
+		// 用户选择清除密码
+		localStorage.removeItem("rememberedCredentials");
+		loginForm.value.rememberMe = false;
+		rememberedPassword.value = null;
+		showPasswordHint.value = false;
+		loginForm.value.password = "";
+		
+		ElMessage.success("已清除保存的密码，请重新输入");
+	} catch (error: any) {
+		// 用户选择保留密码或取消
+		if (error === "cancel") {
+			ElMessage.info("已保留保存的密码，请检查后重试");
+		} else {
+			ElMessage.error(errorMsg);
+		}
+	}
+};
+
 // 处理记住我复选框变化
 const handleRememberChange = (value: boolean) => {
 	if (!value) {
@@ -305,16 +338,18 @@ const handleLogin = async () => {
 		} else {
 			// 登录失败时，清除可能错误的密码
 			if (rememberedPassword.value) {
-				clearAllRememberedCredentials();
+				await showClearPasswordDialog(response.msg || "登录失败");
+			} else {
+				ElMessage.error(response.msg || "登录失败");
 			}
-			ElMessage.error(response.msg || "登录失败");
 		}
 	} catch (error: any) {
 		// 网络错误时，清除可能错误的凭据
 		if (rememberedPassword.value) {
-			clearAllRememberedCredentials();
+			await showClearPasswordDialog(error.msg || "登录失败，请稍后重试");
+		} else {
+			ElMessage.error(error.msg || "登录失败，请稍后重试");
 		}
-		ElMessage.error(error.msg || "登录失败，请稍后重试");
 	} finally {
 		loading.value = false;
 	}
