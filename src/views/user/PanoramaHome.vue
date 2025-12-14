@@ -405,6 +405,20 @@ const addMarkersToMap = (data: LocationData[]) => {
 			contextMenuVisible.value = true;
 		});
 
+		// 双击marker显示菜单
+		marker.on("dblclick", (e: any) => {
+			if (e && e.originalEvent) {
+				e.originalEvent.preventDefault();
+				e.originalEvent.stopPropagation();
+			}
+
+			contextMenuLocation.value = location;
+			const pixel = map.lngLatToContainer(e.lnglat);
+			contextMenuX.value = pixel.x;
+			contextMenuY.value = pixel.y;
+			contextMenuVisible.value = true;
+		});
+
 		markersMap.set(location.id, marker);
 	});
 };
