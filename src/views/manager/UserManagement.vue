@@ -50,22 +50,19 @@
 					</template>
 				</el-table-column>
 				<el-table-column prop="lastLoginTime" label="最后登录时间" width="180" />
-				<el-table-column label="操作" width="200" fixed="right">
-					<template #default="{ row }">
-						<el-button link type="primary" size="small" @click="handleEditPermission(row)">
-							编辑权限
-						</el-button>
-						<el-button
-							v-if="row.id !== currentUserId"
-							link
-							type="danger"
-							size="small"
-							@click="handleDelete(row)"
-						>
-							删除
-						</el-button>
-					</template>
-				</el-table-column>
+				<el-table-column label="操作" width="120" fixed="right">
+						<template #default="{ row }">
+							<el-button
+								v-if="row.id !== currentUserId"
+								link
+								type="danger"
+								size="small"
+								@click="handleDelete(row)"
+							>
+								删除
+							</el-button>
+						</template>
+					</el-table-column>
 			</el-table>
 
 			<!-- 分页 -->
@@ -81,46 +78,6 @@
 				/>
 			</div>
 		</el-card>
-
-		<!-- 权限编辑对话框 -->
-		<el-dialog v-model="permissionDialogVisible" title="编辑权限" width="600px">
-			<div v-if="currentUser" class="permission-content">
-				<el-form :model="permissionForm" label-width="100px">
-					<el-form-item label="用户名">
-						<el-input v-model="currentUser.username" disabled />
-					</el-form-item>
-					<el-form-item label="预设角色">
-						<el-radio-group v-model="permissionForm.role">
-							<el-radio label="user">普通用户</el-radio>
-							<el-radio label="advanced">高级用户</el-radio>
-							<el-radio label="admin">管理员</el-radio>
-						</el-radio-group>
-					</el-form-item>
-					<el-form-item label="细粒度权限">
-						<el-checkbox-group v-model="permissionForm.permissions">
-							<el-checkbox label="data_view">数据查看</el-checkbox>
-							<el-checkbox label="data_download">数据下载</el-checkbox>
-							<el-checkbox label="data_manage">数据管理</el-checkbox>
-							<el-checkbox label="user_manage">用户管理</el-checkbox>
-							<el-checkbox label="system_manage">系统管理</el-checkbox>
-						</el-checkbox-group>
-					</el-form-item>
-					<el-form-item label="权限有效期">
-						<el-date-picker
-							v-model="permissionForm.expiryDate"
-							type="date"
-							placeholder="选择日期"
-							style="width: 100%"
-							value-format="YYYY-MM-DD"
-						/>
-					</el-form-item>
-				</el-form>
-			</div>
-			<template #footer>
-				<el-button @click="permissionDialogVisible = false">取消</el-button>
-				<el-button type="primary" @click="handleSavePermission">保存</el-button>
-			</template>
-		</el-dialog>
 
 		<!-- 添加用户对话框 -->
 		<el-dialog v-model="addUserDialogVisible" title="添加用户" width="500px">
@@ -172,14 +129,6 @@ const searchKeyword = ref("");
 const currentUserId = computed(() => {
 	const userInfo = localStorage.getItem("userInfo");
 	return userInfo ? JSON.parse(userInfo).userId : 0;
-});
-
-const permissionDialogVisible = ref(false);
-const currentUser = ref<any>(null);
-const permissionForm = ref({
-	role: "user",
-	permissions: [] as string[],
-	expiryDate: null as string | null,
 });
 
 const addUserDialogVisible = ref(false);
@@ -253,38 +202,7 @@ const handleStatusChange = async (row: any) => {
 	}
 };
 
-const handleEditPermission = (row: any) => {
-	currentUser.value = row;
-	permissionForm.value = {
-		role: row.role,
-		permissions: ["data_view", "data_download"],
-		expiryDate: null,
-	};
-	permissionDialogVisible.value = true;
-};
 
-const handleSavePermission = async () => {
-	if (!currentUser.value) return;
-
-	try {
-		await ElMessageBox.confirm("确定要修改该用户的权限吗？", "提示", {
-			confirmButtonText: "确定",
-			cancelButtonText: "取消",
-			type: "warning",
-		});
-
-		const response = await request.put(`/api/manager/users/${currentUser.value.id}/permissions`, permissionForm.value);
-		if (response.code === "200") {
-			ElMessage.success("权限更新成功");
-			permissionDialogVisible.value = false;
-			loadData();
-		}
-	} catch (error: any) {
-		if (error !== "cancel") {
-			ElMessage.error("更新权限失败");
-		}
-	}
-};
 
 const handleDelete = (row: any) => {
 	ElMessageBox.confirm(`确定要删除用户"${row.username}"吗？此操作不可恢复。`, "提示", {
@@ -360,9 +278,5 @@ onMounted(() => {
 	justify-content: flex-end;
 }
 
-.user-management .permission-content .el-checkbox-group {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
+
 </style>
