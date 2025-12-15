@@ -635,7 +635,7 @@
 								{{ panoramaDetailData.status === "published" ? "已发布" : "待审核" }}
 							</el-tag>
 						</el-descriptions-item>
-						<el-descriptions-item label="预览图数量">{{ panoramaDetailData.preview_count || 0 }}张</el-descriptions-item>
+						<el-descriptions-item label="预览图数量">{{ panoramaDetailData.preview_images?.length || 0 }}张</el-descriptions-item>
 						<el-descriptions-item label="创建时间">{{ panoramaDetailData.created_at }}</el-descriptions-item>
 					</el-descriptions>
 
@@ -1068,6 +1068,7 @@ const loadPanoramaPreviews = async () => {
 				location_name: item.location_name,
 				longitude: item.longitude,
 				latitude: item.latitude,
+				created_at: item.created_at || null,
 			}));
 
 			previewTotal.value = panoramaPreviews.value.length;
@@ -1548,6 +1549,7 @@ const showAssignDialog = async (row: any) => {
 // 查看全景图详情
 const handleViewPanoramaDetail = (row: any) => {
 	panoramaDetailData.value = row;
+	console.log("查看全景图详情:", row);
 	panoramaDetailDialogVisible.value = true;
 };
 
