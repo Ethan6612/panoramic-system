@@ -496,7 +496,7 @@
 						<el-icon class="el-icon--upload"><UploadFilled /></el-icon>
 						<div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 						<template #tip>
-							<div class="el-upload__tip">支持jpg/png格式文件，且<strong>不超过10MB</strong></div>
+							<div class="el-upload__tip">支持jpg/png格式文件，且<strong>不超过60MB，大文件上传较慢请耐心等候。</strong></div>
 						</template>
 					</el-upload>
 				</el-form-item>
@@ -1837,14 +1837,14 @@ const handleConfirmEdit = async () => {
 // 文件上传前验证
 const beforeUpload = (file: File) => {
 	const isImage = file.type.startsWith("image/");
-	const isLt10M = file.size / 1024 / 1024 < 10;
+	const isLt60M = file.size / 1024 / 1024 < 60;
 
 	if (!isImage) {
 		ElMessage.error("只能上传图片文件!");
 		return false;
 	}
-	if (!isLt10M) {
-		ElMessage.error("图片大小不能超过10MB!");
+	if (!isLt60M) {
+		ElMessage.error("图片大小不能超过60MB!");
 		return false;
 	}
 	return true;
@@ -1853,8 +1853,8 @@ const beforeUpload = (file: File) => {
 // 修改：在 handleFileChange 中添加文件大小验证
 const handleFileChange = (file: any) => {
 	// 验证文件大小
-	if (file.raw && file.raw.size > 10 * 1024 * 1024) {
-		ElMessage.error("图片大小不能超过10MB");
+	if (file.raw && file.raw.size > 60 * 1024 * 1024) {
+		ElMessage.error("图片大小不能超过60MB");
 		// 清空文件列表
 		uploadFiles.value = [];
 		return;
@@ -1996,8 +1996,8 @@ const handleConfirmUpload = async () => {
 
 		// 再次验证文件大小（额外的保护）
 		const file = uploadFiles.value[0];
-		if (file && file.raw && file.raw.size > 10 * 1024 * 1024) {
-			ElMessage.error("文件大小不能超过10MB");
+		if (file && file.raw && file.raw.size > 60 * 1024 * 1024) {
+			ElMessage.error("文件大小不能超过60MB");
 			return;
 		}
 
