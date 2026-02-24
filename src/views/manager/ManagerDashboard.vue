@@ -353,7 +353,7 @@ const loadStats = async (isManualRefresh = false) => {
 					ElMessage.warning("磁盘使用率过高，请及时清理！");
 				}
 				
-				// 如果有待审核数据，显示提示
+				// 如果有待审核数据，显示提示。
 				if (response.data.pendingReview > 0) {
 					ElMessage.info(`有 ${response.data.pendingReview} 条数据待审核`);
 				}
